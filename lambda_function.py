@@ -21,8 +21,6 @@ import boto3
 # 8. French beach (van island) - July 11-15; Aug 14-17
 # 10. Hornby?
 
-print('Loading function')
-
 def lambda_handler(event, context):
 
     emailString = "Search Results: Sasquatch Group Site G1\n"
@@ -44,7 +42,7 @@ def lambda_handler(event, context):
     content = r2.content
     #print(content)
 
-    ## 3. read local HTML file
+    # # 3. read local HTML file
     # file = open('result.html', 'r')
     # content = file.read()
     #print(content)
@@ -70,3 +68,5 @@ def lambda_handler(event, context):
     )
     
     return response
+    
+if __name__ == '__main__': lambda_handler(None,None)
