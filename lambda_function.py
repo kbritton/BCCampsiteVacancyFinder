@@ -23,23 +23,43 @@ import boto3
 
 def lambda_handler(event, context):
 
-    emailString = "Search Results: Sasquatch Group Site G1\n"
+    emailString = ""
 
     ## 1. determine nav offset
-    august = 8
-    month = int(time.strftime("%m"))
-    nav = str(august-month-1)
+    nav = get_nav()
     print(nav)
 
     ## 2. get cookie
-    r1 = requests.get('https://secure.camis.com/DiscoverCamping/Sasquatch/GroupCampingG1', timeout=10)
-    aspSessionId = r1.cookies['ASP.NET_SessionId']
+    aspSessionId = get_cookie()
     print(aspSessionId)
 
-    ## 3. get HTML body
+    ## 3. pull values from pages
+    emailString += scrape(aspSessionId, nav, '49229730-7666-415e-a150-861fb0a13d06', 'Sasquatch Group Site G1')
+    emailString += "\n"
+    emailString += scrape(aspSessionId, nav, 'efc77946-af1d-4401-a09f-3b5be777142f', 'Mabel Lake Group Site G1')
+    print(emailString)
+    
+    ## 4. publish an SNS message
+    send_sns(emailString)
+    
+def get_nav():
+    
+    august = 8
+    month = int(time.strftime("%m"))
+    return str(august-month-1)
+    
+def get_cookie():
+    
+    resp = requests.get('https://secure.camis.com/DiscoverCamping/Sasquatch/GroupCampingG1', timeout=10)
+    return resp.cookies['ASP.NET_SessionId']
+    
+def scrape(aspSessionId, navOffset, resourceId, siteName):
+    
+    emailString = "Search Results: %s\n" % (siteName)
+    
     cookies = {'ASP.NET_SessionId' : aspSessionId}
-    r2 = requests.get("https://secure.camis.com/DiscoverCamping/RceAvail.aspx?rceId=49229730-7666-415e-a150-861fb0a13d06&nav="+nav, cookies=cookies, timeout=10)
-    content = r2.content
+    resp = requests.get("https://secure.camis.com/DiscoverCamping/RceAvail.aspx?rceId=%s&nav=%s" % (resourceId, navOffset), cookies=cookies, timeout=10)
+    content = resp.content
     #print(content)
 
     # # 3. read local HTML file
@@ -47,7 +67,6 @@ def lambda_handler(event, context):
     # content = file.read()
     #print(content)
 
-    ## 4. extract availability
     tree = html.fromstring(content)
     calendars = tree.xpath('//table[@title="Calendar"]')
     for cal in calendars:
@@ -56,17 +75,17 @@ def lambda_handler(event, context):
         dates = cal.xpath('.//td[@class="filt" or @class="avail"]/text()')
         for date in dates:
             emailString += date + "\n"
-
-    print(emailString)
     
-    ## 5. publish an SNS message
+    return emailString
+    
+def send_sns(emailString):
+    
     client = boto3.client('sns')
     response = client.publish(
         TopicArn='arn:aws:sns:us-east-1:409664833508:kbritton_campsite_available',
         Message=emailString,
         Subject='Campsite Search Results'
     )
-    
     return response
     
 if __name__ == '__main__': lambda_handler(None,None)
