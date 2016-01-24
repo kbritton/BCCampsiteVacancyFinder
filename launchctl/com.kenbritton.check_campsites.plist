@@ -15,9 +15,9 @@
         <key>WorkingDirectory</key>
             <string>/Users/kenbritton/projects/BCCampsiteVacancyFinder</string>
         <key>StandardOutPath</key>
-            <string>check_campsites_stdout</string>
+            <string>logs/check_campsites_stdout</string>
         <key>StandardErrorPath</key>
-            <string>check_campsites_stderr</string>
+            <string>logs/check_campsites_stderr</string>
         <key>StartCalendarInterval</key> <!-- multiple per day: https://discussions.apple.com/message/16257388#16257388 -->
             <array>
                 <dict>

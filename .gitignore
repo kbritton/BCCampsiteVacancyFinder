@@ -1,3 +1,3 @@
-check_campsites_stderr
-check_campsites_stdout
-credentials.csv
+logs/check_campsites_stderr
+logs/check_campsites_stdout
+aws/credentials.csv
