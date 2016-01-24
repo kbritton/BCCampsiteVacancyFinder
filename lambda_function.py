@@ -59,7 +59,7 @@ def get_cookie():
     
 def scrape(aspSessionId, navOffset, resourceId, siteName):
     
-    emailString = "Search Results: %s\n" % (siteName)
+    emailString = "%s\n" % (siteName)
     
     cookies = {'ASP.NET_SessionId' : aspSessionId}
     resp = requests.get("https://secure.camis.com/DiscoverCamping/RceAvail.aspx?rceId=%s&nav=%s" % (resourceId, navOffset), cookies=cookies, timeout=10)
