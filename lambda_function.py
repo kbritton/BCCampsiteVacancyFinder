@@ -33,18 +33,18 @@ def lambda_handler(event, context):
     aspSessionId = get_cookie()
     print(aspSessionId)
 
-    ## 3. pull values from pages
-    emailString += scrape(aspSessionId, nav, '49229730-7666-415e-a150-861fb0a13d06','Sasquatch - Group Site G1')
-    emailString += "\n"
-    emailString += scrape(aspSessionId, nav, 'efc77946-af1d-4401-a09f-3b5be777142f','Mabel Lake - Group Site G1')
-    emailString += "\n"
+    ## 4. pull values from pages
+    # emailString += scrape(aspSessionId, nav, '49229730-7666-415e-a150-861fb0a13d06','Sasquatch - Group Site G1')
+    # emailString += "\n"
+    # emailString += scrape(aspSessionId, nav, 'efc77946-af1d-4401-a09f-3b5be777142f','Mabel Lake - Group Site G1')
+    # emailString += "\n"
     emailString += scrape(aspSessionId, nav, '447f96af-0a67-4fa7-bd0f-c4154e0793bd','Kokanee Creek - Group Site G1')
     emailString += "\n"
-    emailString += scrape(aspSessionId, nav, '8face699-98ec-4e71-91fd-b0d57dcd3bb2','Kokanee Creek - Group Site G2')
+    # emailString += scrape(aspSessionId, nav, '8face699-98ec-4e71-91fd-b0d57dcd3bb2','Kokanee Creek - Group Site G2')
     print(emailString)
     
     ## 4. publish an SNS message
-    send_sns(emailString)
+    #send_sns(emailString)
     
 def get_nav():
     
@@ -61,10 +61,13 @@ def scrape(aspSessionId, navOffset, resourceId, siteName):
     
     emailString = "%s\n" % (siteName)
     
+    ## 3. set GroupCampsite preference
+    chooseGroupsite(aspSessionId, resourceId)
+    
     cookies = {'ASP.NET_SessionId' : aspSessionId}
     resp = requests.get("https://secure.camis.com/DiscoverCamping/RceAvail.aspx?rceId=%s&nav=%s" % (resourceId, navOffset), cookies=cookies, timeout=10)
     content = resp.content
-    #print(content)
+    print(content)
 
     # # 3. read local HTML file
     # file = open('result.html', 'r')
@@ -92,4 +95,12 @@ def send_sns(emailString):
     )
     return response
     
+def chooseGroupsite(aspSessionId, resourceId):
+    
+    cookies = {'ASP.NET_SessionId' : aspSessionId}
+    payload = {'resType': 'Group', 'equipment': '', 'equipmentSub':'null', 'vehicleLength':'', 'tentPads':'', 'ReservableOnline_incl':'on', 'arrDate':'null', 'nights':'null', 'apId':'null', 'rceId':resourceId}
+    resp = requests.post("https://secure.camis.com/DiscoverCamping/ResInfo.ashx", data=payload, cookies=cookies)
+    
+    print(resp)
+
 if __name__ == '__main__': lambda_handler(None,None)
