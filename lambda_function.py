@@ -21,6 +21,11 @@ import boto3
 # 8. French beach (van island) - July 11-15; Aug 14-17
 # 10. Hornby?
 
+# Next thing to try
+# 1. submit form for Group sites
+# 2. go to campsite URL
+# 3. go to RceAvail URL
+
 def lambda_handler(event, context):
 
     emailString = ""
