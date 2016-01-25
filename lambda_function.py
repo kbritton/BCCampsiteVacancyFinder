@@ -37,10 +37,10 @@ def lambda_handler(event, context):
     emailString += scrape(aspSessionId, nav, '49229730-7666-415e-a150-861fb0a13d06','Sasquatch - Group Site G1')
     emailString += "\n"
     emailString += scrape(aspSessionId, nav, 'efc77946-af1d-4401-a09f-3b5be777142f','Mabel Lake - Group Site G1')
-    emailString += "\n"
-    emailString += scrape(aspSessionId, nav, '447f96af-0a67-4fa7-bd0f-c4154e0793bd','Kokanee Creek - Group Site G1')
-    emailString += "\n"
-    emailString += scrape(aspSessionId, nav, '8face699-98ec-4e71-91fd-b0d57dcd3bb2','Kokanee Creek - Group Site G2')
+    # emailString += "\n"
+    # emailString += scrape(aspSessionId, nav, '447f96af-0a67-4fa7-bd0f-c4154e0793bd','Kokanee Creek - Group Site G1')
+    # emailString += "\n"
+    # emailString += scrape(aspSessionId, nav, '8face699-98ec-4e71-91fd-b0d57dcd3bb2','Kokanee Creek - Group Site G2')
     print(emailString)
     
     ## 4. publish an SNS message
