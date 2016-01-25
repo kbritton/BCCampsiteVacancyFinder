@@ -29,14 +29,10 @@ def lambda_handler(event, context):
     nav = get_nav()
     print(nav)
 
-    ## 2. get cookie
-    aspSessionId = get_cookie()
-    print(aspSessionId)
-
     ## 3. pull values from pages
-    emailString += scrape(aspSessionId, nav, '49229730-7666-415e-a150-861fb0a13d06','Sasquatch - Group Site G1')
+    emailString += scrape(nav,'https://secure.camis.com/DiscoverCamping/Sasquatch/GroupCampingG1','49229730-7666-415e-a150-861fb0a13d06','Sasquatch - Group Site G1')
     emailString += "\n"
-    emailString += scrape(aspSessionId, nav, 'efc77946-af1d-4401-a09f-3b5be777142f','Mabel Lake - Group Site G1')
+    emailString += scrape(nav, 'https://secure.camis.com/DiscoverCamping/MabelLake/MabelLake/Group','efc77946-af1d-4401-a09f-3b5be777142f','Mabel Lake - Group Site G1')
     # emailString += "\n"
     # emailString += scrape(aspSessionId, nav, '447f96af-0a67-4fa7-bd0f-c4154e0793bd','Kokanee Creek - Group Site G1')
     # emailString += "\n"
@@ -44,7 +40,7 @@ def lambda_handler(event, context):
     print(emailString)
     
     ## 4. publish an SNS message
-    send_sns(emailString)
+    #send_sns(emailString)
     
 def get_nav():
     
@@ -52,16 +48,16 @@ def get_nav():
     month = int(time.strftime("%m"))
     return str(august-month-1)
     
-def get_cookie():
+def get_cookie(url):
     
-    resp = requests.get('https://secure.camis.com/DiscoverCamping/Sasquatch/GroupCampingG1', timeout=10)
+    resp = requests.get(url, timeout=10)
     return resp.cookies['ASP.NET_SessionId']
     
-def scrape(aspSessionId, navOffset, resourceId, siteName):
+def scrape(navOffset, url, resourceId, siteName):
     
     emailString = "%s\n" % (siteName)
     
-    cookies = {'ASP.NET_SessionId' : aspSessionId}
+    cookies = {'ASP.NET_SessionId' : get_cookie(url)}
     resp = requests.get("https://secure.camis.com/DiscoverCamping/RceAvail.aspx?rceId=%s&nav=%s" % (resourceId, navOffset), cookies=cookies, timeout=10)
     content = resp.content
     #print(content)
