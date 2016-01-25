@@ -29,18 +29,18 @@ def lambda_handler(event, context):
     nav = get_nav()
     print(nav)
 
-    ## 2. get cookie
-    aspSessionId = get_cookie()
-    print(aspSessionId)
+    ## 2. get cookies
+    cookies = get_cookies()
+    print(cookies)
 
-    ## 4. pull values from pages
-    # emailString += scrape(aspSessionId, nav, '49229730-7666-415e-a150-861fb0a13d06','Sasquatch - Group Site G1')
-    # emailString += "\n"
-    # emailString += scrape(aspSessionId, nav, 'efc77946-af1d-4401-a09f-3b5be777142f','Mabel Lake - Group Site G1')
-    # emailString += "\n"
-    emailString += scrape(aspSessionId, nav, '447f96af-0a67-4fa7-bd0f-c4154e0793bd','Kokanee Creek - Group Site G1')
+    ## 3. pull values from pages
+    emailString += scrape(cookies,nav,'60ee1cec-7fcb-4681-bbe2-c2daf9bd4a67','6b8338f5-76f0-457b-a938-b8eabbddb0cb','49229730-7666-415e-a150-861fb0a13d06','Sasquatch - Group Site G1')
     emailString += "\n"
-    # emailString += scrape(aspSessionId, nav, '8face699-98ec-4e71-91fd-b0d57dcd3bb2','Kokanee Creek - Group Site G2')
+    # emailString += scrape(cookies,nav,'7446b3fd-59e4-412c-a4f2-05552bd31f6d','efc77946-af1d-4401-a09f-3b5be777142f','Mabel Lake - Group Site G1')
+#     emailString += "\n"
+#     emailString += scrape(cookies,nav,'88d19740-376f-44b1-b6c7-1ce71e7bfacc','447f96af-0a67-4fa7-bd0f-c4154e0793bd','Kokanee Creek - Group Site G1')
+#     emailString += "\n"
+#     emailString += scrape(cookies,nav,'88d19740-376f-44b1-b6c7-1ce71e7bfacc','8face699-98ec-4e71-91fd-b0d57dcd3bb2','Kokanee Creek - Group Site G2')
     print(emailString)
     
     ## 4. publish an SNS message
@@ -52,19 +52,25 @@ def get_nav():
     month = int(time.strftime("%m"))
     return str(august-month-1)
     
-def get_cookie():
+def get_cookies():
     
-    resp = requests.get('https://secure.camis.com/DiscoverCamping/Sasquatch/GroupCampingG1', timeout=10)
-    return resp.cookies['ASP.NET_SessionId']
+    resp = requests.get('https://secure.camis.com/DiscoverCamping/', timeout=10)
+    return resp.cookies
     
-def scrape(aspSessionId, navOffset, resourceId, siteName):
+def chooseGroupsite(cookies, locationId, resourceId):
+    
+    payload = {'resType': 'Group', 'locId':locationId, 'rceId':resourceId}
+    resp = requests.post("https://secure.camis.com/DiscoverCamping/ResInfo.ashx", data=payload, cookies=cookies)
+    print(resp)
+    
+def scrape(cookies, navOffset, locationId, resourceId, siteName):
     
     emailString = "%s\n" % (siteName)
     
-    ## 3. set GroupCampsite preference
-    chooseGroupsite(aspSessionId, resourceId)
+    ## 1. set GroupCampsite preference
+    chooseGroupsite(cookies, locationId, resourceId)
     
-    cookies = {'ASP.NET_SessionId' : aspSessionId}
+    ## 2. view availability
     resp = requests.get("https://secure.camis.com/DiscoverCamping/RceAvail.aspx?rceId=%s&nav=%s" % (resourceId, navOffset), cookies=cookies, timeout=10)
     content = resp.content
     print(content)
@@ -79,7 +85,7 @@ def scrape(aspSessionId, navOffset, resourceId, siteName):
     for cal in calendars:
         month = cal.xpath('.//table[@class="cal"]/tr/td/text()')[0]
         emailString += "\n" + month + "\n"
-        dates = cal.xpath('.//td[@class="filt" or @class="avail"]/text()')
+        dates = cal.xpath('.//td[@class="avail"]/text()')
         for date in dates:
             emailString += date + "\n"
     
@@ -94,13 +100,5 @@ def send_sns(emailString):
         Subject='Campsite Search Results'
     )
     return response
-    
-def chooseGroupsite(aspSessionId, resourceId):
-    
-    cookies = {'ASP.NET_SessionId' : aspSessionId}
-    payload = {'resType': 'Group', 'equipment': '', 'equipmentSub':'null', 'vehicleLength':'', 'tentPads':'', 'ReservableOnline_incl':'on', 'arrDate':'null', 'nights':'null', 'apId':'null', 'rceId':resourceId}
-    resp = requests.post("https://secure.camis.com/DiscoverCamping/ResInfo.ashx", data=payload, cookies=cookies)
-    
-    print(resp)
 
 if __name__ == '__main__': lambda_handler(None,None)
