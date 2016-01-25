@@ -33,8 +33,10 @@ def lambda_handler(event, context):
     # emailString += scrape(cookies,'60ee1cec-7fcb-4681-bbe2-c2daf9bd4a67','6b8338f5-76f0-457b-a938-b8eabbddb0cb','49229730-7666-415e-a150-861fb0a13d06','Sasquatch - Group Site G1')
     # emailString += "\n"
     # emailString += scrape(cookies,'7446b3fd-59e4-412c-a4f2-05552bd31f6d','efc77946-af1d-4401-a09f-3b5be777142f','Mabel Lake - Group Site G1')
+    # https://secure.camis.com/DiscoverCamping/MabelLake/Group?List
 #     emailString += "\n"
-    emailString += scrape(cookies,'88d19740-376f-44b1-b6c7-1ce71e7bfacc','cf89757b-e7c2-4522-ae4c-e619f6136dce','447f96af-0a67-4fa7-bd0f-c4154e0793bd','Kokanee Creek - Group Site G1')
+    emailString += scrape(cookies,'https://secure.camis.com/DiscoverCamping/KokaneeCreekProvincialPark/GroupSites?List','88d19740-376f-44b1-b6c7-1ce71e7bfacc','cf89757b-e7c2-4522-ae4c-e619f6136dce','447f96af-0a67-4fa7-bd0f-c4154e0793bd','Kokanee Creek - Group Site G1')
+    
     emailString += "\n"
 #     emailString += scrape(cookies,'88d19740-376f-44b1-b6c7-1ce71e7bfacc','8face699-98ec-4e71-91fd-b0d57dcd3bb2','Kokanee Creek - Group Site G2')
     print(emailString)
@@ -47,9 +49,9 @@ def get_cookies():
     resp = requests.get('https://secure.camis.com/DiscoverCamping/', timeout=10)
     return resp.cookies
     
-def chooseGroupsite(cookies, locationId, mapId, resourceId):
+def chooseGroupsite(cookies, url, locationId, mapId, resourceId):
     
-    # set reservation properties
+    # 1. set reservation properties
     payload1 = {
         'resType': 'Group',
         #'equipment':'',
@@ -64,25 +66,27 @@ def chooseGroupsite(cookies, locationId, mapId, resourceId):
         #'mapId':mapId,
         #'rceId':resourceId
     }
-    headers = {'Referer':'https://secure.camis.com/DiscoverCamping/KokaneeCreekProvincialPark/GroupSites?Map'}
     
-    resp1 = requests.post("https://secure.camis.com/DiscoverCamping/ResInfo.ashx", data=payload1, cookies=cookies, headers=headers)
+    resp1 = requests.post("https://secure.camis.com/DiscoverCamping/ResInfo.ashx", data=payload1, cookies=cookies)
     print(resp1.content)
     
-    # set the selected resource
-    payload2 = {
-        'type': 'Resource',
-        'id':resourceId
-    }
-    resp2 = requests.post("https://secure.camis.com/DiscoverCamping/Details.ashx", data=payload2, cookies=cookies, headers=headers)
-    print(resp2.content)
+    # 2. set the selected resource
+    # payload2 = {
+    #     'type': 'Resource',
+    #     'id':resourceId
+    # }
+    # resp2 = requests.post("https://secure.camis.com/DiscoverCamping/Details.ashx", data=payload2, cookies=cookies)
+    # print(resp2.content)
     
-def scrape(cookies, locationId, mapId, resourceId, siteName):
+    # 3. navigate to the site detail page
+    requests.get(url, cookies=cookies)
+    
+def scrape(cookies, url, locationId, mapId, resourceId, siteName):
     
     emailString = "%s\n" % (siteName)
     
     ## 1. set GroupCampsite preference
-    chooseGroupsite(cookies, locationId, mapId, resourceId)
+    chooseGroupsite(cookies, url, locationId, mapId, resourceId)
     
     ## 2. view availability
     resp = requests.get("https://secure.camis.com/DiscoverCamping/RceAvail.aspx?locId=%s&mapId=%s&rceId=%s&nav=6" % (locationId, mapId, resourceId), cookies=cookies, timeout=10)
