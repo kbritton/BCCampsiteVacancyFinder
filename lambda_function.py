@@ -25,73 +25,66 @@ def lambda_handler(event, context):
 
     emailString = ""
 
+    ## 1. determine nav offset
+    nav = get_nav()
+
     ## 2. get cookies
     cookies = get_cookies()
     print(cookies)
 
     ## 3. pull values from pages
-    # emailString += scrape(cookies,'60ee1cec-7fcb-4681-bbe2-c2daf9bd4a67','6b8338f5-76f0-457b-a938-b8eabbddb0cb','49229730-7666-415e-a150-861fb0a13d06','Sasquatch - Group Site G1')
-    # emailString += "\n"
-    # emailString += scrape(cookies,'7446b3fd-59e4-412c-a4f2-05552bd31f6d','efc77946-af1d-4401-a09f-3b5be777142f','Mabel Lake - Group Site G1')
-    # https://secure.camis.com/DiscoverCamping/MabelLake/Group?List
-#     emailString += "\n"
-    emailString += scrape(cookies,'https://secure.camis.com/DiscoverCamping/KokaneeCreekProvincialPark/GroupSites?List','88d19740-376f-44b1-b6c7-1ce71e7bfacc','cf89757b-e7c2-4522-ae4c-e619f6136dce','447f96af-0a67-4fa7-bd0f-c4154e0793bd','Kokanee Creek - Group Site G1')
-    
+    emailString += scrape(cookies,nav,'https://secure.camis.com/DiscoverCamping/Sasquatch/GroupCampingG1?List','49229730-7666-415e-a150-861fb0a13d06','Sasquatch - Group Site G1')
     emailString += "\n"
-#     emailString += scrape(cookies,'88d19740-376f-44b1-b6c7-1ce71e7bfacc','8face699-98ec-4e71-91fd-b0d57dcd3bb2','Kokanee Creek - Group Site G2')
+    emailString += scrape(cookies,nav,'https://secure.camis.com/DiscoverCamping/MabelLake/Group?List','efc77946-af1d-4401-a09f-3b5be777142f','Mabel Lake - Group Site G1')
+    # emailString += "\n"
+    # emailString += scrape(cookies,nav,'https://secure.camis.com/DiscoverCamping/KokaneeCreekProvincialPark/GroupSites?List','447f96af-0a67-4fa7-bd0f-c4154e0793bd','Kokanee Creek - Group Site G1')
+    # emailString += "\n"
+    # emailString += scrape(cookies,nav,'https://secure.camis.com/DiscoverCamping/KokaneeCreekProvincialPark/GroupSites?List','8face699-98ec-4e71-91fd-b0d57dcd3bb2','Kokanee Creek - Group Site G2')
     print(emailString)
     
     ## 4. publish an SNS message
-    #send_sns(emailString)
+    send_sns(emailString)
+    
+def get_nav():
+    august = 8
+    month = int(time.strftime("%m"))
+    return str(august-month-1)
     
 def get_cookies():
     
     resp = requests.get('https://secure.camis.com/DiscoverCamping/', timeout=10)
     return resp.cookies
     
-def chooseGroupsite(cookies, url, locationId, mapId, resourceId):
+def chooseGroupsite(cookies, url, resourceId):
     
     # 1. set reservation properties
-    payload1 = {
+    requests.post("https://secure.camis.com/DiscoverCamping/ResInfo.ashx", cookies=cookies, data={
         'resType': 'Group',
-        #'equipment':'',
-        #'equipmentSub':'null',
-        #'vehicleLength':'',
-        #'tentPads':'',
-        #'ReservableOnline_incl':'on',
         'arrDate':':2016-07-1',
         'nights':'3',
-        #'apId':'null',
-        #'locId':locationId,
-        #'mapId':mapId,
-        #'rceId':resourceId
-    }
-    
-    resp1 = requests.post("https://secure.camis.com/DiscoverCamping/ResInfo.ashx", data=payload1, cookies=cookies)
-    print(resp1.content)
+        'rceId':resourceId
+    })
     
     # 2. set the selected resource
-    # payload2 = {
-    #     'type': 'Resource',
-    #     'id':resourceId
-    # }
-    # resp2 = requests.post("https://secure.camis.com/DiscoverCamping/Details.ashx", data=payload2, cookies=cookies)
-    # print(resp2.content)
+    requests.post("https://secure.camis.com/DiscoverCamping/Details.ashx", cookies=cookies, data={
+        'type': 'Resource',
+        'id':resourceId
+    })
     
     # 3. navigate to the site detail page
     requests.get(url, cookies=cookies)
     
-def scrape(cookies, url, locationId, mapId, resourceId, siteName):
+def scrape(cookies, navOffset, url, resourceId, siteName):
     
     emailString = "%s\n" % (siteName)
     
     ## 1. set GroupCampsite preference
-    chooseGroupsite(cookies, url, locationId, mapId, resourceId)
+    chooseGroupsite(cookies, url, resourceId)
     
     ## 2. view availability
-    resp = requests.get("https://secure.camis.com/DiscoverCamping/RceAvail.aspx?locId=%s&mapId=%s&rceId=%s&nav=6" % (locationId, mapId, resourceId), cookies=cookies, timeout=10)
+    resp = requests.get("https://secure.camis.com/DiscoverCamping/RceAvail.aspx?rceId=%s&nav=%s" % (resourceId, navOffset), cookies=cookies, timeout=10)
     content = resp.content
-    print(content)
+    #print(content)
 
     # # 3. read local HTML file
     # file = open('result.html', 'r')
@@ -103,7 +96,7 @@ def scrape(cookies, url, locationId, mapId, resourceId, siteName):
     for cal in calendars:
         month = cal.xpath('.//table[@class="cal"]/tr/td/text()')[0]
         emailString += "\n" + month + "\n"
-        dates = cal.xpath('.//td[@class="avail"]/text()')
+        dates = cal.xpath('.//td[@class="avail" or @class="filt"]/text()')
         for date in dates:
             emailString += date + "\n"
     
