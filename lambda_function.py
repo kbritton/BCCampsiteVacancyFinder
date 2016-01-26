@@ -36,10 +36,11 @@ def lambda_handler(event, context):
     emailString += scrape(cookies,nav,'https://secure.camis.com/DiscoverCamping/Sasquatch/GroupCampingG1?List','49229730-7666-415e-a150-861fb0a13d06','Sasquatch - Group Site G1')
     emailString += "\n"
     emailString += scrape(cookies,nav,'https://secure.camis.com/DiscoverCamping/MabelLake/Group?List','efc77946-af1d-4401-a09f-3b5be777142f','Mabel Lake - Group Site G1')
-    # emailString += "\n"
+    emailString += "\n"
     # emailString += scrape(cookies,nav,'https://secure.camis.com/DiscoverCamping/KokaneeCreekProvincialPark/GroupSites?List','447f96af-0a67-4fa7-bd0f-c4154e0793bd','Kokanee Creek - Group Site G1')
     # emailString += "\n"
     # emailString += scrape(cookies,nav,'https://secure.camis.com/DiscoverCamping/KokaneeCreekProvincialPark/GroupSites?List','8face699-98ec-4e71-91fd-b0d57dcd3bb2','Kokanee Creek - Group Site G2')
+    # emailString += "\n"
     print(emailString)
     
     ## 4. publish an SNS message
@@ -76,7 +77,7 @@ def chooseGroupsite(cookies, url, resourceId):
     
 def scrape(cookies, navOffset, url, resourceId, siteName):
     
-    emailString = "%s\n" % (siteName)
+    emailString = "\n%s" % (siteName)
     
     ## 1. set GroupCampsite preference
     chooseGroupsite(cookies, url, resourceId)
@@ -98,7 +99,9 @@ def scrape(cookies, navOffset, url, resourceId, siteName):
         emailString += "\n" + month + "\n"
         dates = cal.xpath('.//td[@class="avail" or @class="filt"]/text()')
         for date in dates:
-            emailString += date + "\n"
+            emailString += date + ","
+            
+    emailString += ","
     
     return emailString
     
