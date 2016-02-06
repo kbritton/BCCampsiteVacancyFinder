@@ -70,7 +70,7 @@ def lambda_handler(event, context):
     print(emailString)
 
     ## 4. publish an SNS message
-    if delta(emailString, AVAIL_FILE) or (delta(dayOfYear, DAY_FILE) and int(hourOfDay) > 10):
+    if delta(emailString, AVAIL_FILE) or (delta(dayOfYear, DAY_FILE) and int(hourOfDay) >= 10):
         send_sns(emailString)
         replaceFile(emailString, AVAIL_FILE)
         replaceFile(dayOfYear, DAY_FILE)
