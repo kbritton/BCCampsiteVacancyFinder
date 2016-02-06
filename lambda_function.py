@@ -31,6 +31,8 @@ def lambda_handler(event, context):
     dayOfYear = time.strftime("%j")
     hourOfDay = time.strftime("%H")
 
+    print(dayOfYear + " - " + hourOfDay)
+
     ## 1. determine nav offset
     nav = get_nav()
 
