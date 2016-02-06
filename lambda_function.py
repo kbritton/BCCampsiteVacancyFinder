@@ -2,6 +2,7 @@ import time
 from lxml import html 
 import requests
 import boto3
+import os.path
 
 # pip install lxml && pip install requests
 # http://docs.python-requests.org/en/latest/user/quickstart/
@@ -21,9 +22,14 @@ import boto3
 # 8. French beach (van island) - July 11-15; Aug 14-17
 # 10. Hornby?
 
+AVAIL_FILE = 'data/availability.txt'
+DAY_FILE = 'data/dayofyear.txt'
+
 def lambda_handler(event, context):
 
     emailString = ""
+    dayOfYear = time.strftime("%j")
+    hourOfDay = time.strftime("%H")
 
     ## 1. determine nav offset
     nav = get_nav()
@@ -45,6 +51,7 @@ def lambda_handler(event, context):
         'Mabel Lake - Group Site G1'
     )
     emailString += "\n"
+    
     # emailString += scrape(cookies,nav,
     #     'https://secure.camis.com/DiscoverCamping/KokaneeCreekProvincialPark/GroupSites?List',
     #     '447f96af-0a67-4fa7-bd0f-c4154e0793bd',
@@ -59,10 +66,23 @@ def lambda_handler(event, context):
     # emailString += "\n"
     
     print(emailString)
-    
+
     ## 4. publish an SNS message
-    send_sns(emailString)
-    
+    if delta(emailString, AVAIL_FILE) or (delta(dayOfYear, DAY_FILE) and "10" == hourOfDay):
+        send_sns(emailString)
+        replaceFile(emailString, AVAIL_FILE)
+        replaceFile(dayOfYear, DAY_FILE)
+
+def delta(newStr, file) :
+    if os.path.isfile(file) == False:
+        return True
+    with open(file, 'r') as f:
+        return newStr != f.read()
+
+def replaceFile(newStr, file) :
+    with open(file, 'w+') as f:
+        f.write(newStr)
+
 def get_nav():
     august = 8
     month = int(time.strftime("%m"))
