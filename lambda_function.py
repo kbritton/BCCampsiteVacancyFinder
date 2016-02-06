@@ -80,10 +80,18 @@ def delta(newStr, file) :
         return newStr != f.read()
 
 def replaceFile(newStr, file) :
+    dirname = os.path.dirname(file)
+    if not os.path.exists(dirname):
+        try:
+            os.makedirs(dirname)
+        except OSError as exc: # Guard against race condition
+            if exc.errno != errno.EEXIST:
+                raise
     with open(file, 'w+') as f:
         f.write(newStr)
 
 def get_nav():
+    
     august = 8
     month = int(time.strftime("%m"))
     return str(august-month-1)
