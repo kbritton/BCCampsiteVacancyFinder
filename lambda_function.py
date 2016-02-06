@@ -7,11 +7,7 @@ import os.path
 # pip install lxml && pip install requests
 # http://docs.python-requests.org/en/latest/user/quickstart/
 
-# build a Lambda package
-# python -m pip install -U lxml -t /Users/kenbritton/Desktop/FindCampsiteVacancies
-# python -m pip install -U requests -t /Users/kenbritton/Desktop/FindCampsiteVacancies
-
-### Sites
+### Group Sites
 # 1. Gordon Bay Group Site - Cowichan Lake
 # 2. Cowichanlake.ca
 # 3. Mussel Beach?
@@ -21,6 +17,10 @@ import os.path
 # 7. Wells Gray - booked July 23-Aug 4; Aug 1-4
 # 8. French beach (van island) - July 11-15; Aug 14-17
 # 10. Hornby?
+
+### Individual Sites
+# 1. Sasquatch Hicks
+# 2. Sasquatch Lakeside
 
 AVAIL_FILE = 'data/availability.txt'
 DAY_FILE = 'data/dayofyear.txt'
@@ -39,16 +39,39 @@ def lambda_handler(event, context):
     print(cookies)
 
     ## 3. pull values from pages
+    ## Sasquatch Group
     emailString += scrape(cookies,nav,
         'https://secure.camis.com/DiscoverCamping/Sasquatch/GroupCampingG1?List',
         '49229730-7666-415e-a150-861fb0a13d06',
-        'Sasquatch - Group Site G1'
+        'Sasquatch - Group Site G1',
+        'Group'
     )
     emailString += "\n"
+
+    ### Mabel Group
     emailString += scrape(cookies,nav,
         'https://secure.camis.com/DiscoverCamping/MabelLake/Group?List',
         'efc77946-af1d-4401-a09f-3b5be777142f',
-        'Mabel Lake - Group Site G1'
+        'Mabel Lake - Group Site G1',
+        'Group'
+    )
+    emailString += "\n"
+    
+    ### Sasquatch Hicks H13
+    emailString += scrape(cookies,nav,
+        'https://secure.camis.com/DiscoverCamping/Sasquatch/HicksCampground(H1-H72)?List',
+        '0fb2cba2-703a-424d-8594-b333ca7b03a5',
+        'Sasquatch - Hicks Campground H13',
+        'Campsite'
+    )
+    emailString += "\n"
+    
+    ### Sasquatch Lakeside L17
+    emailString += scrape(cookies,nav,
+        'https://secure.camis.com/DiscoverCamping/Sasquatch/LakesideCampground(L1-L42)?List',
+        'abab8855-4260-43e3-8f6a-5618be715b60',
+        'Sasquatch - Lakeside Campground L17',
+        'Campsite'
     )
     emailString += "\n"
     
@@ -74,12 +97,14 @@ def lambda_handler(event, context):
         replaceFile(dayOfYear, DAY_FILE)
 
 def delta(newStr, file) :
+
     if os.path.isfile(file) == False:
         return True
     with open(file, 'r') as f:
         return newStr != f.read()
 
 def replaceFile(newStr, file) :
+
     dirname = os.path.dirname(file)
     if not os.path.exists(dirname):
         try:
@@ -101,11 +126,11 @@ def get_cookies():
     resp = requests.get('https://secure.camis.com/DiscoverCamping/', timeout=10)
     return resp.cookies
     
-def chooseGroupsite(cookies, url, resourceId):
+def chooseSiteDetails(cookies, url, resourceId, resType):
     
     # 1. set reservation properties
     requests.post("https://secure.camis.com/DiscoverCamping/ResInfo.ashx", cookies=cookies, data={
-        'resType': 'Group',
+        'resType': resType,
         'arrDate':':2016-07-1',
         'nights':'3',
         'rceId':resourceId
@@ -120,12 +145,12 @@ def chooseGroupsite(cookies, url, resourceId):
     # 3. navigate to the site detail page
     requests.get(url, cookies=cookies)
     
-def scrape(cookies, navOffset, url, resourceId, siteName):
+def scrape(cookies, navOffset, url, resourceId, siteName, resType):
     
     emailString = "\n%s" % (siteName)
     
     ## 1. set GroupCampsite preference
-    chooseGroupsite(cookies, url, resourceId)
+    chooseSiteDetails(cookies, url, resourceId, resType)
     
     ## 2. view availability
     resp = requests.get("https://secure.camis.com/DiscoverCamping/RceAvail.aspx?rceId=%s&nav=%s" % (resourceId, navOffset), cookies=cookies, timeout=10)
