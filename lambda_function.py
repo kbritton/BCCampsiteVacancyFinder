@@ -1,5 +1,5 @@
 import time
-from lxml import html 
+from lxml import html
 import requests
 import boto3
 import os.path
@@ -24,6 +24,7 @@ import os.path
 
 AVAIL_FILE = 'data/availability.txt'
 DAY_FILE = 'data/dayofyear.txt'
+ARRIVAL_DATE = '2017-07-1'
 
 def lambda_handler(event, context):
 
@@ -34,7 +35,7 @@ def lambda_handler(event, context):
     print(dayOfYear + " - " + hourOfDay)
 
     ## 1. determine nav offset
-    nav = get_nav()
+    nav = 0 #get_nav()
 
     ## 2. get cookies
     cookies = get_cookies()
@@ -53,7 +54,7 @@ def lambda_handler(event, context):
         'Mabel Lake - Group Site G1'
     )
     emailString += "\n"
-    
+
     # emailString += scrape(cookies,nav,
     #     'https://secure.camis.com/DiscoverCamping/KokaneeCreekProvincialPark/GroupSites?List',
     #     '447f96af-0a67-4fa7-bd0f-c4154e0793bd',
@@ -66,7 +67,7 @@ def lambda_handler(event, context):
     #     'Kokanee Creek - Group Site G2'
     # )
     # emailString += "\n"
-    
+
     print(emailString)
 
     ## 4. publish an SNS message
@@ -93,42 +94,42 @@ def replaceFile(newStr, file) :
         f.write(newStr)
 
 def get_nav():
-    
+
     august = 8
     month = int(time.strftime("%m"))
     return str(august-month-1)
-    
+
 def get_cookies():
-    
+
     resp = requests.get('https://secure.camis.com/DiscoverCamping/', timeout=10)
     return resp.cookies
-    
+
 def chooseGroupsite(cookies, url, resourceId):
-    
+
     # 1. set reservation properties
     requests.post("https://secure.camis.com/DiscoverCamping/ResInfo.ashx", cookies=cookies, data={
         'resType': 'Group',
-        'arrDate':':2016-07-1',
+        'arrDate':ARRIVAL_DATE,
         'nights':'3',
         'rceId':resourceId
     })
-    
+
     # 2. set the selected resource
     requests.post("https://secure.camis.com/DiscoverCamping/Details.ashx", cookies=cookies, data={
         'type': 'Resource',
         'id':resourceId
     })
-    
+
     # 3. navigate to the site detail page
     requests.get(url, cookies=cookies)
-    
+
 def scrape(cookies, navOffset, url, resourceId, siteName):
-    
+
     emailString = "\n%s" % (siteName)
-    
+
     ## 1. set GroupCampsite preference
     chooseGroupsite(cookies, url, resourceId)
-    
+
     ## 2. view availability
     resp = requests.get("https://secure.camis.com/DiscoverCamping/RceAvail.aspx?rceId=%s&nav=%s" % (resourceId, navOffset), cookies=cookies, timeout=10)
     content = resp.content
@@ -143,17 +144,17 @@ def scrape(cookies, navOffset, url, resourceId, siteName):
     calendars = tree.xpath('//table[@title="Calendar"]')
     for cal in calendars:
         month = cal.xpath('.//table[@class="cal"]/tr/td/text()')[0]
-        emailString += "\n" + month + "\n"
+        emailString += "\n[" + month + "]\n"
         dates = cal.xpath('.//td[@class="avail" or @class="filt"]/text()')
         for date in dates:
             emailString += date + ","
-            
+
     emailString += ","
-    
+
     return emailString
-    
+
 def send_sns(emailString):
-    
+
     client = boto3.client('sns')
     response = client.publish(
         TopicArn='arn:aws:sns:us-east-1:409664833508:kbritton_campsite_available',
