@@ -3,6 +3,7 @@ from lxml import html
 import requests
 import boto3
 import os.path
+import sys
 
 # pip install lxml && pip install requests
 # http://docs.python-requests.org/en/latest/user/quickstart/
@@ -75,6 +76,8 @@ def lambda_handler(event, context):
         send_sns(emailString)
         replaceFile(emailString, AVAIL_FILE)
         replaceFile(dayOfYear, DAY_FILE)
+    else:
+        print "no changes found"
 
 def delta(newStr, file) :
     if os.path.isfile(file) == False:
@@ -107,21 +110,30 @@ def get_cookies():
 def chooseGroupsite(cookies, url, resourceId):
 
     # 1. set reservation properties
-    requests.post("https://secure.camis.com/DiscoverCamping/ResInfo.ashx", cookies=cookies, data={
+    r = requests.post("https://secure.camis.com/DiscoverCamping/ResInfo.ashx", cookies=cookies, data={
         'resType': 'Group',
         'arrDate':ARRIVAL_DATE,
         'nights':'3',
         'rceId':resourceId
     })
+    if not r.status_code == 200:
+        print >> sys.stderr, "Error setting reservation properties"
+        sys.exit(1)
 
     # 2. set the selected resource
-    requests.post("https://secure.camis.com/DiscoverCamping/Details.ashx", cookies=cookies, data={
+    r = requests.post("https://secure.camis.com/DiscoverCamping/Details.ashx", cookies=cookies, data={
         'type': 'Resource',
         'id':resourceId
     })
+    if not r.status_code == 200:
+        print >> sys.stderr, "Error setting resource"
+        sys.exit(1)
 
     # 3. navigate to the site detail page
-    requests.get(url, cookies=cookies)
+    r = requests.get(url, cookies=cookies)
+    if not r.status_code == 200:
+        print >> sys.stderr, "Error navigating to site detail"
+        sys.exit(1)
 
 def scrape(cookies, navOffset, url, resourceId, siteName):
 
@@ -132,6 +144,10 @@ def scrape(cookies, navOffset, url, resourceId, siteName):
 
     ## 2. view availability
     resp = requests.get("https://secure.camis.com/DiscoverCamping/RceAvail.aspx?rceId=%s&nav=%s" % (resourceId, navOffset), cookies=cookies, timeout=10)
+    if not resp.status_code == 200:
+        print >> sys.stderr, "Error viewing availability"
+        sys.exit(1)
+
     content = resp.content
     #print(content)
 
@@ -155,12 +171,17 @@ def scrape(cookies, navOffset, url, resourceId, siteName):
 
 def send_sns(emailString):
 
+    print "sending email via SNS"
+
     client = boto3.client('sns')
     response = client.publish(
         TopicArn='arn:aws:sns:us-east-1:409664833508:kbritton_campsite_available',
         Message=emailString,
         Subject='Campsite Search Results'
     )
+
+    print response
+
     return response
 
 if __name__ == '__main__': lambda_handler(None,None)
